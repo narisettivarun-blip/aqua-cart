@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aqua Cart</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<div class="spinner-overlay" id="spinner">Loading...</div>
+
+<!-- ============ VOICE MODE START (one required tap, then fully hands-free) ============ -->
+<div id="voiceStartOverlay" class="voice-start-overlay" style="display:none;">
+  <div class="voice-start-card glass-card">
+    <div class="voice-start-icon">&#127908;</div>
+    <h2 id="txt_voiceStartHeading">Tap to Start Voice Mode</h2>
+    <p id="txt_voiceStartDesc">One tap to turn on the microphone — this is required by your browser. After this, you won't need to touch anything. Just speak, and Aqua Cart will follow what you say.</p>
+    <button type="button" class="btn-submit" onclick="startVoiceAuto()" id="txt_voiceStartBtn">&#127908; Start Voice Mode</button>
+    <button type="button" class="btn-secondary" style="width:100%; margin-top:10px;" onclick="dismissVoiceStart()" id="txt_voiceStartSkip">Continue with touch only</button>
+  </div>
+</div>
+
+<!-- ============ ONBOARDING ============ -->
+<div id="onboardingScreen">
+
+  <!-- STEP 0: choose register / login -->
+  <div id="stepChoice" class="login-card glass-card">
+    <h2 style="margin-bottom:25px; text-align:center; font-size:22px;" id="txt_welcome">Welcome to Aqua Cart</h2>
+    <button class="btn-submit" onclick="showStep('stepLogin')" id="txt_gotoLogin">Sign In</button>
+    <button class="btn-secondary" style="width:100%; margin-top:15px;" onclick="showStep('stepRegister')" id="txt_gotoRegister">Create New Account</button>
+  </div>
+
+  <!-- STEP: REGISTER -->
+  <div id="stepRegister" class="login-card glass-card" style="display:none;">
+    <h2 style="margin-bottom:20px; text-align:center; font-size:22px;">Create Account</h2>
+    <div class="msg-box msg-error" id="registerError"></div>
+    <div class="msg-box msg-success" id="registerSuccess"></div>
+    <form onsubmit="event.preventDefault(); doRegister();">
+      <div class="input-box">
+        <input type="text" id="regName" required>
+        <label>User Name</label>
+      </div>
+      <div class="input-box">
+        <input type="tel" id="regPhone" required>
+        <label>Phone Number</label>
+      </div>
+      <div class="input-box">
+        <input type="email" id="regEmail" required>
+        <label>Email ID</label>
+      </div>
+      <div class="input-box">
+        <input type="password" id="regPassword" required minlength="6">
+        <label>Password (min 6 chars)</label>
+      </div>
+      <button type="submit" class="btn-submit">Create Account</button>
+      <button type="button" class="btn-secondary" style="width:100%; margin-top:10px;" onclick="showStep('stepChoice')">&larr; Back</button>
+    </form>
+  </div>
+
+  <!-- STEP: PENDING APPROVAL NOTICE -->
+  <div id="stepPending" class="login-card glass-card" style="display:none; text-align:center;">
+    <h2 style="margin-bottom:15px;">&#128274; Registration Received</h2>
+    <p style="font-size:14px; line-height:1.6; margin-bottom:20px;">
+      Your account has been created and is <b>pending admin approval</b>.
+      You'll be able to sign in as soon as an admin approves your account.
+    </p>
+    <button class="btn-submit" onclick="showStep('stepLogin')">Go to Sign In</button>
+  </div>
+
+  <!-- STEP: LOGIN -->
+  <div id="stepLogin" class="login-card glass-card" style="display:none;">
+    <h2 style="margin-bottom:20px; text-align:center;" id="txt_loginHeading">Account Login</h2>
+    <div class="msg-box msg-error" id="loginError"></div>
+    <form onsubmit="event.preventDefault(); doLogin();" autocomplete="on">
+      <div class="input-box">
+        <input type="email" id="loginEmail" required autocomplete="username email">
+        <label id="lbl_loginEmail">Email ID</label>
+      </div>
+      <div class="input-box">
+        <input type="password" id="loginPassword" required autocomplete="current-password">
+        <label id="lbl_loginPassword">Password</label>
+      </div>
+      <button type="submit" class="btn-submit" id="txt_loginBtn">Sign In</button>
+      <button type="button" class="btn-secondary" style="width:100%; margin-top:10px;" onclick="showStep('stepChoice')">&larr; Back</button>
+    </form>
+    <p style="text-align:center; margin-top:5px;">
+      <button class="link-btn" onclick="showStep('stepRegister')">Need an account? Register</button>
+    </p>
+    <p style="text-align:center; margin-top:8px; font-size:12px; opacity:0.75;">
+      Admin? <a href="/admin">Go to Admin Panel</a>
+    </p>
+  </div>
+
+  <!-- STEP: SAFETY PRECAUTIONS -->
+  <div id="stepSafety" class="login-card glass-card" style="display:none;">
+    <h2 style="margin-bottom:15px; text-align:center; font-size:20px;" id="txt_safetyHeading">&#128737;&#65039; Safety Precautions</h2>
+    <p style="font-size:13px; margin-bottom:15px; text-align:center; color:rgba(255,255,255,0.9);" id="txt_safetyDesc">
+      Please read and agree to our safety guidelines before proceeding:
+    </p>
+    <div class="safety-box">
+      <ul>
+        <li id="txt_safety1">Never send advance money to sellers without inspecting the product.</li>
+        <li id="txt_safety2">Verify the freshness and quality of the fish during pickup.</li>
+        <li id="txt_safety3">Keep transactions safe and meet in reliable public locations.</li>
+        <li id="txt_safety4">Do not share sensitive bank credentials or OTPs with anyone.</li>
+      </ul>
+    </div>
+    <div class="safety-btn-group">
+      <button type="button" class="btn-submit btn-accept" onclick="acceptSafety()" id="btn_accept">Accept</button>
+      <button type="button" class="btn-submit btn-disaccept" onclick="showStep('stepLogin')" id="btn_disaccept">Disaccept</button>
+    </div>
+  </div>
+
+  <div class="onboarding-lang-container">
+    <label id="lbl_onboardingLang">&#127760; Language / &#3122;&#3149;&#3122;&#3134; / &#2349;&#2366;&#2359;&#2366;:</label>
+    <select id="startLangSelect" onchange="changeLanguageFromStart()">
+      <option value="en">English</option>
+      <option value="te">తెలుగు (Telugu)</option>
+      <option value="hi">हिंदी (Hindi)</option>
+    </select>
+    <button type="button" id="voiceToggleBtn" class="voice-toggle-btn" onclick="toggleVoiceGuide()" title="Toggle voice guide">&#128266;</button>
+  </div>
+</div>
+
+<!-- ============ VOICE COMBINED (speak + listen, fills the form for you) ============ -->
+<button type="button" id="voiceCombinedBtn" class="voice-combined-fab" onclick="toggleVoiceCombined()" title="Voice Combined: control all of Aqua Cart hands-free by speaking">
+  &#127908;<span id="voiceCombinedLabel">Voice Combined</span>
+</button>
+<div id="voiceCombinedPanel" class="voice-combined-panel" style="display:none;">
+  <div class="vc-row">
+    <span class="vc-dot" id="vcDot"></span>
+    <span id="vcStatus">Starting...</span>
+  </div>
+  <div id="vcHeard" class="vc-heard"></div>
+  <button type="button" class="vc-cancel" onclick="stopVoiceCombined()">&#10006; Cancel</button>
+</div>
+
+<!-- ============ MAIN APPLICATION ============ -->
+<div id="mainApp">
+  <header>
+    <h1 id="txt_appTitle">Aqua Cart</h1>
+  </header>
+
+  <nav>
+    <button onclick="showPage('home')" id="nav_home">Home</button>
+    <button onclick="showPage('sell')" id="nav_sell">Sell</button>
+    <button onclick="showPage('myAds')" id="nav_myAds">My Ads</button>
+    <button onclick="showPage('account')" id="nav_account">Account</button>
+  </nav>
+
+  <!-- HOME PAGE -->
+  <div id="home" class="page" style="display:block;">
+    <div class="home-header">
+      <div class="home-header-left">
+        <h2 id="txt_homeHeading" style="margin-bottom:5px;">Home - Fish Listings</h2>
+        <small id="txt_homeInstruction" style="color:rgba(255,255,255,0.8); display:block;">* Click on any fish photo to see full details and seller info.</small>
+      </div>
+      <div class="search-box-corner">
+        <input type="text" id="searchInput" onkeyup="filterListings()" placeholder="🔍 Search fish type or location...">
+      </div>
+    </div>
+    <!-- MARKET PRICE BOARD (read-only for users; only the admin can change prices) -->
+    <div id="marketPriceBoard" class="market-board glass-card">
+      <h3 id="txt_marketHeading" style="margin-bottom:4px;">&#128202; Today's Market Price (per kg)</h3>
+      <small id="txt_marketNote" style="opacity:0.85; display:block; margin-bottom:12px;">Set by Aqua Cart admin</small>
+      <div id="marketPriceList" class="market-grid"></div>
+    </div>
+    <div id="homeListings"></div>
+  </div>
+
+  <!-- DETAILS PAGE -->
+  <div id="detailsPage" class="page">
+    <button class="btn-secondary" onclick="showPage('home')" id="txt_backBtn">&larr; Back to Home</button>
+    <div id="listingDetails"></div>
+  </div>
+
+  <!-- SELL PAGE -->
+  <div id="sell" class="page">
+    <div class="glass-card" style="padding:30px;">
+      <h2 id="txt_sellHeading" style="margin-bottom:25px;">Sell Your Fish</h2>
+      <div class="msg-box msg-error" id="sellError"></div>
+      <form onsubmit="event.preventDefault(); addListing();">
+        <div style="margin-bottom:20px;">
+          <label id="lbl_fishPhoto" style="display:block; margin-bottom:5px; font-size:14px;">Fish Photo:</label>
+          <input type="file" accept="image/*" capture="camera" id="fishPhoto" style="color:#fff;" required>
+        </div>
+        <div class="input-box">
+          <input type="text" id="fishType" required>
+          <label id="lbl_fishType">Type of Fish</label>
+        </div>
+        <div class="input-box">
+          <input type="number" step="any" id="fishTons" oninput="calculateWeightAndPrice()" required>
+          <label id="lbl_fishTons">Tons</label>
+        </div>
+        <div id="weightCalcBox" class="calc-box">
+          <p>&#9878;&#65039; Calculated Weight: <span id="calcWeightValue">0 kg</span></p>
+        </div>
+        <div class="input-box" style="margin-bottom:25px;">
+          <div class="input-group-split">
+            <div class="input-box" style="flex:1;">
+              <input type="number" step="any" id="fishWeight" required>
+              <label id="lbl_fishWeight">Weight</label>
+            </div>
+            <select id="fishWeightUnit" onchange="calculateWeightAndPrice()">
+              <option value="kg">kg</option>
+              <option value="g">g</option>
+            </select>
+          </div>
+        </div>
+        <div class="input-box">
+          <input type="number" id="fishPieces" required>
+          <label id="lbl_fishPieces">Pieces (count)</label>
+        </div>
+        <div class="input-box">
+          <input type="number" step="any" id="fishPricePerKg" oninput="calculateWeightAndPrice()" required>
+          <label id="lbl_fishPrice">Price per kg (₹)</label>
+        </div>
+        <div id="marketHintBox" class="calc-box">
+          <p>&#128202; <span id="txt_marketHintLabel">Market price</span>: <span id="marketHintValue">-</span></p>
+        </div>
+        <div id="priceCalcBox" class="calc-box">
+          <p>&#128176; Total Price for Tonnage: <span id="calcPriceValue">₹0</span></p>
+        </div>
+        <div class="input-box">
+          <textarea id="fishAddress" required style="height:60px;"></textarea>
+          <label id="lbl_fishAddress">Pickup Address / Location</label>
+        </div>
+        <div class="input-box">
+          <textarea id="fishNote" maxlength="500" style="height:60px;"></textarea>
+          <label id="lbl_fishNote">Note (optional)</label>
+        </div>
+        <button type="submit" class="btn-submit" id="txt_doneBtn">Done</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MY ADS PAGE -->
+  <div id="myAds" class="page">
+    <h2 id="txt_myAdsHeading" style="margin-bottom:15px;">My Ads</h2>
+    <div id="myListings"></div>
+  </div>
+
+  <!-- ACCOUNT PAGE -->
+  <div id="account" class="page">
+    <h2 id="txt_accountHeading" style="margin-bottom:20px;">My Account</h2>
+
+    <div class="account-card glass-card">
+      <h3 id="txt_profileHeading" style="margin-bottom:20px;">User Profile</h3>
+      <div class="msg-box msg-success" id="profileSuccess"></div>
+      <div class="input-box">
+        <input type="text" id="userName" required>
+        <label id="lbl_userName">User Name</label>
+      </div>
+      <div class="input-box">
+        <input type="tel" id="userPhone" required>
+        <label id="lbl_userPhone">Phone Number</label>
+      </div>
+      <button onclick="saveProfile()" class="btn-submit" id="txt_saveProfileBtn">Save Profile</button>
+      <button onclick="logout()" class="btn-secondary" style="width:100%; margin-top:15px; background:rgba(255,0,0,0.3);" id="txt_logoutBtn">Logout</button>
+    </div>
+
+    <div class="account-card glass-card">
+      <h3 style="margin-bottom:10px;">&#128274; Change Password</h3>
+      <div class="msg-box msg-error" id="pwdError"></div>
+      <div class="msg-box msg-success" id="pwdSuccess"></div>
+      <div class="input-box">
+        <input type="password" id="currentPassword">
+        <label>Current Password</label>
+      </div>
+      <div class="input-box">
+        <input type="password" id="newPassword" minlength="6">
+        <label>New Password (min 6 chars)</label>
+      </div>
+      <button onclick="changePassword()" class="btn-submit">Update Password</button>
+    </div>
+
+    <div class="account-card glass-card">
+      <h3 id="txt_privacyHeading" style="margin-bottom:10px;">&#128274; Privacy & Security</h3>
+      <p id="txt_privacySubtext" style="font-size:13px; margin-bottom:15px; color:rgba(255,255,255,0.8);">
+        View your saved account information including Username, Phone Number and Email.
+      </p>
+      <button onclick="openPrivacyPage()" class="btn-submit" id="txt_privacyBtn">Privacy</button>
+    </div>
+
+    <div class="account-card glass-card">
+      <h3>Language / భాష / भाषा</h3>
+      <div class="input-box" style="margin-top:15px; margin-bottom:0;">
+        <select id="langSelect" onchange="changeLanguageFromAccount()">
+          <option value="en">English</option>
+          <option value="te">తెలుగు (Telugu)</option>
+          <option value="hi">हिंदी (Hindi)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="account-card glass-card">
+      <h3 id="txt_supportHeading" style="margin-bottom:10px;">Help & Support</h3>
+      <p id="txt_supportText" style="margin-bottom:10px;">Having issues with your listing? Get in touch with us:</p>
+      <p>📧 <strong id="lbl_email">Email:</strong> support@aquacart.com</p>
+      <p style="margin-top:5px;">📞 <strong id="lbl_helpline">Helpline:</strong> 1800-XXX-XXXX</p>
+    </div>
+  </div>
+
+  <!-- PRIVACY DETAILS PAGE -->
+  <div id="privacyPage" class="page">
+    <button class="btn-secondary" onclick="showPage('account')" id="txt_privacyBackBtn">&larr; Back to Account</button>
+    <div class="account-card glass-card">
+      <h2 id="txt_privacyPageHeading" style="margin-bottom:20px;">&#128274; Privacy Details</h2>
+      <div class="privacy-info-item">
+        <div><strong id="lbl_privName">User Name</strong><span id="privDisplay_name">-</span></div>
+      </div>
+      <div class="privacy-info-item">
+        <div><strong id="lbl_privPhone">Phone Number</strong><span id="privDisplay_phone">-</span></div>
+      </div>
+      <div class="privacy-info-item">
+        <div><strong id="lbl_privEmail">Email ID</strong><span id="privDisplay_email">-</span></div>
+      </div>
+      <p style="font-size:12px; opacity:0.8; margin-top:10px;">
+        For your security, your password is never stored or displayed in plain text.
+        Use "Change Password" on the Account page to update it.
+      </p>
+    </div>
+  </div>
+
+</div>
+
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
